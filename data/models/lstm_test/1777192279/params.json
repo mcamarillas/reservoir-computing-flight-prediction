@@ -1,0 +1,7 @@
+{
+    "input_size": 14,
+    "hidden_size": 32,
+    "num_layers": 1,
+    "lr": 0.0001,
+    "epochs": 2,
+    "device": 
