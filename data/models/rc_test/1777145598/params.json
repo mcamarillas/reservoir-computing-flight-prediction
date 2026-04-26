@@ -1,0 +1,14 @@
+{
+    "units": 100,
+    "sr": 0.9,
+    "mu": 0.1,
+    "input_scaling": 1,
+    "learning_rate": 0.1,
+    "rc_connectivity": 0.4,
+    "input_connectivity": 0.4,
+    "activation": "sigmoid",
+    "epochs": 1000,
+    "warmup_steps": 15,
+    "ridge": 0.5,
+    "seed": 33
+}
