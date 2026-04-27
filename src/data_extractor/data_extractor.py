@@ -22,7 +22,7 @@ class FlightDataExtractor:
         self.preprocessor = None
         self.transformation_map = {}
 
-        self.SPLIT_FRAC = 0.8
+        self.SPLIT_FRAC = 0.7
         self.FORECAST_WINDOW = 12
         self.MIN_LENGTH = self.FORECAST_WINDOW + 2
 
@@ -43,10 +43,10 @@ class FlightDataExtractor:
         cols_to_diff = self._get_cols_to_diff()
         df = self._calculate_column_diffs(df, cols_to_diff)
 
-        train_df, test_df = self._train_test_split(df)   
-        transformed_train, transformed_test = self._transform_data(train_df, test_df)
+        train_df, val_df, test_df = self._train_test_split(df)   
+        transformed_train, transformed_val, transformed_test = self._transform_data(train_df, val_df, test_df)
         
-        self._save_results(transformed_train, transformed_test)
+        self._save_results(transformed_train, transformed_val, transformed_test)
 
     def _load_and_clean_data(self, file_list: list[str]) -> pd.DataFrame:
         all_frames = []
@@ -101,18 +101,21 @@ class FlightDataExtractor:
         df[[f"{col}_diff" for col in cols]] = diffed_values
         return df.dropna().reset_index(drop=True)
 
-    def _train_test_split(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _train_test_split(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         icao_list = [
             key for key, group in df.groupby('icao24') 
             if not group.isnull().values.any() and len(group) > self.MIN_LENGTH
         ]
 
         train_size = int(len(icao_list) * self.SPLIT_FRAC)
-        train_list, test_list = icao_list[:train_size], icao_list[train_size:]
+        val_size = int((len(icao_list) - train_size) / 2)
+        train_list = icao_list[:train_size]
+        val_list = icao_list[train_size:train_size+val_size]
+        test_list = icao_list[train_size+val_size:]
         
-        return df[df["icao24"].isin(train_list)], df[df["icao24"].isin(test_list)]
+        return df[df["icao24"].isin(train_list)], df[df["icao24"].isin(val_list)], df[df["icao24"].isin(test_list)]
 
-    def _transform_data(self, train_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _transform_data(self, train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         self.transformation_map = self._get_cols_by_transformation()
         
         self.preprocessor = ColumnTransformer(
@@ -129,13 +132,15 @@ class FlightDataExtractor:
 
         self.preprocessor.set_output(transform="pandas")
         train_scaled = self.preprocessor.fit_transform(train_df)
+        val_scaled = self.preprocessor.transform(val_df)
         test_scaled = self.preprocessor.transform(test_df)
 
         train_scaled.columns = [c.split('__')[-1] for c in train_scaled.columns]
+        val_scaled.columns = [c.split('__')[-1] for c in val_scaled.columns]
         test_scaled.columns = [c.split('__')[-1] for c in test_scaled.columns]
 
         self._save_transformation_metadata()
-        return train_scaled, test_scaled
+        return train_scaled, val_scaled, test_scaled
 
     def _get_variable_types(self) -> dict:
         all_vars = {**self.metadata["numerical_variables"], **self.metadata["categorical_variables"]}
@@ -183,7 +188,7 @@ class FlightDataExtractor:
             if name in self.preprocessor.named_transformers_:
                 scaler = self.preprocessor.named_transformers_[name]
                 for i, col in enumerate(self.transformation_map.get(key, [])):
-                    if name == 'std': meta[col] = {"scale": scaler.scale_[i], "mean": scaler.mean_[i]}
+                    if name == 'std': meta[col] = {"std": scaler.scale_[i], "mean": scaler.mean_[i]}
                     elif name == 'minmax': meta[col] = {"min": scaler.data_min_[i], "max": scaler.data_max_[i]}
                     elif name == 'maxabs': meta[col] = {"max_abs": scaler.max_abs_[i]}
 
@@ -191,7 +196,8 @@ class FlightDataExtractor:
         with open(out_path, "w") as f:
             json.dump(meta, f, indent=4)
 
-    def _save_results(self, train: pd.DataFrame, test: pd.DataFrame):
+    def _save_results(self, train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame):
         write_csv_file(train, os.path.join(self.base_path, "train", f"data_{self.suffix}.csv"))
+        write_csv_file(val, os.path.join(self.base_path, "val", f"data_{self.suffix}.csv"))
         write_csv_file(test, os.path.join(self.base_path, "test", f"data_{self.suffix}.csv"))
 
