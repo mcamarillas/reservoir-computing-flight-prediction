@@ -1,0 +1,23 @@
+{
+    "lat": {
+        "transformation": "std",
+        "std": 16.624351176855086,
+        "mean": 33.45353714891791
+    },
+    "lon": {
+        "transformation": "std",
+        "std": 82.29377009857527,
+        "mean": -50.72705833488593
+    },
+    "velocity": {
+        "transformation": "std",
+        "std": 72.22476665793583,
+        "mean": 182.1433502807474
+    },
+    "time": {
+        "trans": "passthrough"
+    },
+    "icao24": {
+        "trans": "passthrough"
+    }
+}

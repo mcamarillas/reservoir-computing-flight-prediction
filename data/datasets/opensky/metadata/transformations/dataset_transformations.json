@@ -1,0 +1,70 @@
+{
+    "lat": {
+        "transformation": "std",
+        "std": 16.522910842070168,
+        "mean": 33.27736370242274
+    },
+    "lat_diff": {
+        "transformation": "std",
+        "std": 0.021018130140567824,
+        "mean": 0.00033433061951040633
+    },
+    "lon": {
+        "transformation": "std",
+        "std": 82.54990759618123,
+        "mean": -51.2063614099156
+    },
+    "lon_diff": {
+        "transformation": "std",
+        "std": 0.03566519503289081,
+        "mean": 0.0009121880281429405
+    },
+    "velocity": {
+        "transformation": "std",
+        "std": 70.93793117401735,
+        "mean": 185.38046906559703
+    },
+    "velocity_diff": {
+        "transformation": "std",
+        "std": 1.8345999630766636,
+        "mean": -0.03458177865489365
+    },
+    "vertrate": {
+        "transformation": "std",
+        "std": 4.930541993705862,
+        "mean": -0.353441505034683
+    },
+    "baroaltitude": {
+        "transformation": "std",
+        "std": 4292.559888254578,
+        "mean": 7645.455916108231
+    },
+    "geoaltitude": {
+        "transformation": "std",
+        "std": 4334.321403793503,
+        "mean": 7730.477039744911
+    },
+    "sin_heading": {
+        "trans": "sin",
+        "period": 360
+    },
+    "cos_heading": {
+        "trans": "cos",
+        "period": 360
+    },
+    "time": {
+        "trans": "passthrough"
+    },
+    "onground": {
+        "trans": "passthrough"
+    },
+    "alert": {
+        "trans": "passthrough"
+    },
+    "spi": {
+        "trans": "passthrough"
+    },
+    "icao24": {
+        "trans": "passthrough"
+    }
+}

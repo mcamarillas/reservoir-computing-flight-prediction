@@ -7,7 +7,7 @@ from reservoirpy.mat_gen import uniform, bernoulli
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
 
 class BaseEpsilonGreedyReservoirHPSearch:
-    def __init__(self, X_train, y_train, X_test, y_test, n_iterations, epsilon_greedy=None):
+    def __init__(self, X_train, y_train, X_test, y_test, n_iterations, epsilon_greedy=None, criterion=mean_absolute_percentage_error, optimize_objective="minimize"):
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
@@ -15,9 +15,10 @@ class BaseEpsilonGreedyReservoirHPSearch:
         self.memory = deque(maxlen=5)
         self.history = deque(maxlen=n_iterations)
         self.epsilon_greedy = epsilon_greedy
-        self.best_score = +np.inf
         self.best_params = None
-        
+        self.criterion = criterion
+        self.optimize_objective=optimize_objective
+        self.best_score = +np.inf if self.optimize_objective == "minimize" else -np.inf
         self.search_space = {
             "units": [5, 50, 100, 200],
             "sr": {"min": np.log(1e-2), "max": np.log(1e1)},
@@ -120,7 +121,8 @@ class BaseEpsilonGreedyReservoirHPSearch:
 
             self.history.append(params)
             
-            if score < self.best_score:
+            improve_condition = score < self.best_score if self.optimize_objective == "minimize" else score > self.best_score
+            if improve_condition:
                 self.best_score = score
                 self.best_params = params
                 self.memory.append(params)
@@ -168,7 +170,7 @@ class EpsilonGreedyReservoirHPSearch_R2(BaseEpsilonGreedyReservoirHPSearch):
                 
                 y_test_flat = np.concatenate(self.y_test)
                 predictions_flat = np.concatenate(predictions)
-                mape = mean_absolute_percentage_error(y_test_flat, predictions_flat)
+                mape = self.criterion(y_test_flat, predictions_flat)
                 mape_lst += [mape]
             
             except Exception as e:

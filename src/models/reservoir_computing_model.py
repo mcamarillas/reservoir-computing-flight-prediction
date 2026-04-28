@@ -68,8 +68,8 @@ class IPReservoirComputingModel():
         return self.readout.run(reservoir_states)
     
     @staticmethod
-    def tune(X_train, y_train, X_test, y_test, name, n_iterations=20, base_path="./data/models"):
-        searcher = EpsilonGreedyReservoirHPSearch_R2(X_train, y_train, X_test, y_test, n_iterations=n_iterations)
+    def tune(X_train, y_train, X_test, y_test, name, n_iterations=20, criterion="mape", optimize_objective="minimize", base_path="./data/models"):
+        searcher = EpsilonGreedyReservoirHPSearch_R2(X_train, y_train, X_test, y_test, n_iterations=n_iterations,criterion=criterion, optimize_objective=optimize_objective)
         start_time = time.time()
         params, _ = searcher.search(n_iterations=n_iterations)
 
@@ -94,7 +94,7 @@ class IPReservoirComputingModel():
 
     def save_model(self, base_path: str = "./data/models"):
         model_path = os.path.join(base_path, self.name, self.version)
-        os.makedirs(model_path, exist_ok=True) # Ensure directory exists
+        os.makedirs(model_path, exist_ok=True)
         
         write_json_file(self.params, os.path.join(model_path, "params.json"))
         

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 logger = get_logger("LSTMRegressorModel")
 
 class LSTMRegressorModel(nn.Module):
-    def __init__(self, name: str, version=None, params: dict = None):
+    def __init__(self, name: str, version=None, params: dict = None, criterion = mape_loss, optimize_objective="minimize"):
         super().__init__()
         self.name = name
         self.version = version or str(int(time.time()))
@@ -33,9 +33,9 @@ class LSTMRegressorModel(nn.Module):
             dropout=params.get("dropout", 0)
         )
         self.fc = nn.Linear(self.hidden_size, 1)
-
+        self.optimize_objective = optimize_objective
         self.to(self.device)
-        self.criterion = mape_loss
+        self.criterion = criterion
         self.optimizer = torch.optim.Adam(self.parameters(), lr=params.get("lr", 1e-4))
         self.history = {"train_loss": [], "val_loss": []}
 
@@ -57,7 +57,8 @@ class LSTMRegressorModel(nn.Module):
     
     def fit(self, train_dataloader, val_dataloader=None):
         start_time = time.time()
-        best_val_loss = float('inf')
+        best_val_loss = float('inf') if self.optimize_objective == "minimize" else float('-inf')
+        
         epochs_no_improve = 0
         for epoch in range(self.epochs):
             self.train()
@@ -83,7 +84,8 @@ class LSTMRegressorModel(nn.Module):
                 
                 logger.info(f"Epoch {epoch} | Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f}")
 
-                if avg_val_loss < best_val_loss:
+                improve_condition = avg_val_loss < best_val_loss if self.optimize_objective == "minimize" else avg_val_loss > best_val_loss
+                if improve_condition:
                     best_val_loss = avg_val_loss
                     epochs_no_improve = 0
                     self.best_state = self.state_dict()

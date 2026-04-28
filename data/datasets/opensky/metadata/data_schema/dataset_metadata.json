@@ -1,0 +1,105 @@
+{
+  "target": "velocity",
+  "step_variable": "time",
+  "group_by_variable": "icao24",
+  "numerical_variables": {
+    "time": {
+      "type": "integer",
+      "include": false,
+      "transformation": "passthrough",
+      "calculate_diff": false
+    },
+    "lat": {
+      "type": "float",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": true
+    },
+    "lon": {
+      "type": "float",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": true
+    },
+    "velocity": {
+      "type": "float",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": true
+    },
+    "heading": {
+      "type": "float",
+      "include": true,
+      "transformation": "cyclic",
+      "calculate_diff": false
+    },
+    "vertrate": {
+      "type": "integer",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": false
+    },
+    "baroaltitude": {
+      "type": "float",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": false
+    },
+    "geoaltitude": {
+      "type": "float",
+      "include": true,
+      "transformation": "std",
+      "calculate_diff": false
+    },
+    "lastposupdate": {
+      "type": "integer",
+      "include": false,
+      "transformation": "",
+      "calculate_diff": false
+    },
+    "lastcontact": {
+      "type": "integer",
+      "include": false,
+      "transformation": "",
+      "calculate_diff": false
+    },
+    "onground": {
+      "type": "integer",
+      "include": true,
+      "transformation": "passthrough",
+      "calculate_diff": false
+    },
+    "alert": {
+      "type": "integer",
+      "include": true,
+      "transformation": "passthrough",
+      "calculate_diff": false
+    },
+    "spi": {
+      "type": "integer",
+      "include": true,
+      "transformation": "passthrough",
+      "calculate_diff": false
+    }
+  },
+  "categorical_variables": {
+    "icao24": {
+      "type": "string",
+      "include": false,
+      "transformation": "passthrough",
+      "calculate_diff": false
+    },
+    "callsign": {
+      "type": "string",
+      "include": false,
+      "transformation": "",
+      "calculate_diff": false
+    },
+    "squawk": {
+      "type": "string",
+      "include": false,
+      "transformation": "",
+      "calculate_diff": false
+    }
+  }
+}
