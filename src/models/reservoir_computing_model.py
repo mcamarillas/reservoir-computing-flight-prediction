@@ -8,8 +8,9 @@ from reservoirpy.mat_gen import uniform, bernoulli
 from src.hpt.epsilon_greedy_search import EpsilonGreedyReservoirHPSearch_R2
 from src.hpt.hp_visualizer import visualize_search
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
-from utils.io import read_json_file, read_npy_file, write_json_file, write_npy_file
-from utils.logger import get_logger
+from src.utils.s3_io import read_json_from_s3, read_npy_from_s3, write_json_to_s3, write_npy_to_s3
+from src.utils.logger import get_logger
+from src.utils.config import bucket
 
 logger = get_logger("IPReservoirComputingModel")
 
@@ -39,16 +40,16 @@ class IPReservoirComputingModel():
         )
 
     @staticmethod
-    def load_model(name, version, base_path: str = "./data/models"):
+    def load_model(name, version, base_path: str = "models"):
         model_path = os.path.join(base_path, name, version)
         
-        params = read_json_file(os.path.join(model_path, "params.json"))
+        params = read_json_from_s3(bucket, os.path.join(model_path, "params.json"))
         
         instance = IPReservoirComputingModel(name=name, params=params)
         instance.version = version
         
-        weights = read_npy_file( os.path.join(model_path, "readout_weights.npy"))
-        bias = read_npy_file( os.path.join(model_path, "readout_bias.npy"))
+        weights = read_npy_from_s3(bucket, os.path.join(model_path, "readout_weights.npy"))
+        bias = read_npy_from_s3(bucket, os.path.join(model_path, "readout_bias.npy"))
         instance.readout.Wout = weights
         instance.readout.bias = bias
         instance.readout.output_dim = weights.shape[1]
@@ -92,15 +93,15 @@ class IPReservoirComputingModel():
         else:
             raise Exception(f"Error: The evaluation function {eval_function} is not suported")
 
-    def save_model(self, base_path: str = "./data/models"):
+    def save_model(self, base_path: str = "models"):
         model_path = os.path.join(base_path, self.name, self.version)
         os.makedirs(model_path, exist_ok=True)
         
-        write_json_file(self.params, os.path.join(model_path, "params.json"))
+        write_json_to_s3(self.params, bucket, os.path.join(model_path, "params.json"))
         
         if self.readout.Wout is not None:
-            write_npy_file(self.readout.Wout, os.path.join(model_path, "readout_weights.npy"))
-            write_npy_file(self.readout.bias, os.path.join(model_path, "readout_bias.npy"))
+            write_npy_to_s3(self.readout.Wout, bucket, os.path.join(model_path, "readout_weights.npy"))
+            write_npy_to_s3(self.readout.bias, bucket, os.path.join(model_path, "readout_bias.npy"))
         else:
             raise Exception("Not able to save: The model was not fitted yet")
         

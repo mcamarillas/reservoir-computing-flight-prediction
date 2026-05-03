@@ -1,15 +1,8 @@
-from enum import Enum
-
 import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-import lightgbm as lgb
-
-class ModelType(Enum): 
-    RESERVOIR_COMPUTING = 0,
-    LSTM = 1,
-    LGBM = 2
+from src.utils.config import ModelType
 
 class FlightDataset(Dataset):
     def __init__(self, X, y):
@@ -22,7 +15,7 @@ class FlightDataset(Dataset):
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
 
-class FlightDataPreparer:    
+class DatasetPreparer:    
     def __init__(self, target_column: str,  window_size: int = 12, required_length: int = 100):
         self.target_column = target_column
         self.window_size = window_size
@@ -63,22 +56,6 @@ class FlightDataPreparer:
         X, y, icao_list = self._prepare_windowed_data(df)
         dataset = FlightDataset(X, y)
         return DataLoader(dataset, batch_size=64, shuffle=False, num_workers=4, pin_memory=True), X.shape[2], icao_list
-
-    def prepare_lgbm_input_data(self, X: pd.DataFrame):
-        """
-        X, y, icao_counts = self._prepare_windowed_data(
-            X, 
-            target_column=self.target_column, 
-            window_size=self.window_size, 
-            required_length=self.required_length
-        )
-        X_lgbm = X.reshape(X.shape[0], -1)
-        y_lgbm = np.array(y, dtype=np.float32).flatten()
-
-        train_set = lgb.Dataset(X_lgbm, label=y_lgbm)
-        test_set = lgb.Dataset(X_test, label=y_test, reference=train_set)
-        """
-        return False
 
     def _prepare_windowed_data(self, X: pd.DataFrame):
         icao_group_by = X.groupby('icao24')

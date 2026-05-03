@@ -6,19 +6,20 @@ from collections import defaultdict
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, FunctionTransformer
 
-from utils.io import read_csv_file, read_json_file, write_csv_file
-from utils.logger import get_logger
+from src.utils.s3_io import read_csv_from_s3, read_json_from_s3, write_csv_to_s3, write_json_to_s3
+from src.utils.logger import get_logger
+from src.utils.config import bucket
 
-logger = get_logger("FlightDataExtractor")
+logger = get_logger("DatasetPreprocess")
 
-class FlightDataExtractor:
+class DatasetPreprocess:
     def __init__(self, metadata_file: str, dataset_suffix: str, base_path: str, trans_path: str):
         self.metadata_file = metadata_file
         self.suffix = dataset_suffix
         self.base_path = base_path
         self.trans_path = trans_path
         
-        self.metadata = read_json_file(self.metadata_file)
+        self.metadata = read_json_from_s3(bucket, self.metadata_file)
         self.preprocessor = None
         self.transformation_map = {}
 
@@ -56,7 +57,7 @@ class FlightDataExtractor:
         for file_path in file_list:
             try:
                 logger.info(f"Processing {file_path}...")
-                df = read_csv_file(file_path)
+                df = read_csv_from_s3(bucket ,file_path)
                 df = self._cast_data(df, var_types)
                 df = df.drop(columns=cols_to_drop)
                 all_frames.append(df)
@@ -188,16 +189,15 @@ class FlightDataExtractor:
             if name in self.preprocessor.named_transformers_:
                 scaler = self.preprocessor.named_transformers_[name]
                 for i, col in enumerate(self.transformation_map.get(key, [])):
-                    if name == 'std': meta[col] = {"std": scaler.scale_[i], "mean": scaler.mean_[i]}
-                    elif name == 'minmax': meta[col] = {"min": scaler.data_min_[i], "max": scaler.data_max_[i]}
-                    elif name == 'maxabs': meta[col] = {"max_abs": scaler.max_abs_[i]}
+                    if name == 'std': meta[col] = {"transformation": "std", "std": scaler.scale_[i], "mean": scaler.mean_[i]}
+                    elif name == 'minmax': meta[col] = {"transformation": "min_max", "min": scaler.data_min_[i], "max": scaler.data_max_[i]}
+                    elif name == 'maxabs': meta[col] = {"transformation": "max_abs", "max_abs": scaler.max_abs_[i]}
 
-        out_path = os.path.join(self.trans_path, f"dataset_{self.suffix}_transformations.json")
-        with open(out_path, "w") as f:
-            json.dump(meta, f, indent=4)
+        key = os.path.join(self.trans_path, f"dataset_{self.suffix}_transformations.json")
+        write_json_to_s3(meta, bucket, key)
 
     def _save_results(self, train: pd.DataFrame, val: pd.DataFrame, test: pd.DataFrame):
-        write_csv_file(train, os.path.join(self.base_path, "train", f"data_{self.suffix}.csv"))
-        write_csv_file(val, os.path.join(self.base_path, "val", f"data_{self.suffix}.csv"))
-        write_csv_file(test, os.path.join(self.base_path, "test", f"data_{self.suffix}.csv"))
+        write_csv_to_s3(train, bucket, os.path.join(self.base_path, "train", f"data_{self.suffix}.csv"))
+        write_csv_to_s3(val, bucket, os.path.join(self.base_path, "val", f"data_{self.suffix}.csv"))
+        write_csv_to_s3(test, bucket, os.path.join(self.base_path, "test", f"data_{self.suffix}.csv"))
 

@@ -3,11 +3,11 @@ import os
 import numpy as np
 import optuna
 
-from src.hpt.hp_visualizer import visualize_search
 from sklearn.metrics import r2_score, mean_absolute_percentage_error
-from utils.io import read_json_file, write_json_file, write_torch_model, load_torch_model
-from utils.logger import get_logger
-from utils.custom_metrics import mape_loss
+from src.utils.s3_io import read_json_from_s3, write_json_to_s3, write_torch_model_to_s3, load_torch_model_from_s3
+from src.utils.logger import get_logger
+from src.utils.custom_metrics import mape_loss
+from src.utils.config import bucket
 
 import torch.nn as nn
 import torch
@@ -161,20 +161,22 @@ class LSTMRegressorModel(nn.Module):
 
 
     @staticmethod
-    def load_model(name, version, base_path: str = "./data/models"):
+    def load_model(name, version, base_path: str = "models", device="cpu"):
         model_path = os.path.join(base_path, name, version)
-        params = read_json_file(os.path.join(model_path, "params.json"))
-
+        params = read_json_from_s3(bucket, os.path.join(model_path, "params.json"))
+        params["device"] = device
         instance = LSTMRegressorModel(name=name, version=version, params=params)
-        load_torch_model(instance, os.path.join(model_path, "model.pth"), device=params.get("device", "cpu"))
+        load_torch_model_from_s3(instance, bucket, os.path.join(model_path, "model.pth"), device=params.get("device", "cpu"))
         return instance
     
 
-    def save_model(self, base_path: str = "./data/models"):
+    def save_model(self, base_path: str = "models"):
         logger.info(f"The model params are {self.params}")
+        params_to_save = self.params.copy()
+        params_to_save.pop('device', None)
         model_path = os.path.join(base_path, self.name, self.version)
-        write_json_file(self.params, os.path.join(model_path, "params.json"))
-        write_torch_model(self, os.path.join(model_path, "model.pth"))
+        write_json_to_s3(params_to_save, bucket, os.path.join(model_path, "params.json"))
+        write_torch_model_to_s3(self, bucket, os.path.join(model_path, "model.pth"))
 
     def plot_history(self, title: str = "Train history"):
         try:
